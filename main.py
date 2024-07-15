@@ -1,5 +1,7 @@
 import pygame
 import sys
+import json
+import requests
 
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(0, 0, 255)
@@ -12,6 +14,8 @@ yellow_piece_img = pygame.image.load("resources/yellow_piece.png")
 red_piece_img = pygame.image.load("resources/red_piece.png")
 gameDisplay.blit(table, (320, 160))
 
+API_GATEWAY_URL = "https://YOUR_API_GATEWAY_INVOKE_URL"
+
 
 class Piece:
     def __init__(self, color, coords):
@@ -23,10 +27,26 @@ class Piece:
         if self.color == 'red':
             gameDisplay.blit(red_piece_img, (self.coords[0], self.coords[1], 10, 10))
 
+    # POSTS TO DYNAMO DB ("GAME_ID, SELF.PIECE, SELF.COLOR, SELF.COORDS(NEW COORDS))
+    # TODO
+    # GRAPHICAL MOVEMENT
+    def move(self, game_id):
+        url = f"{API_GATEWAY_URL}/move"
+        payload = {
+            "game_id": game_id,
+            "piece": self,
+            "color": self.color,
+            "coords": self.coords
+        }
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(url, data=json.dumps(payload), headers=headers)
+        return response.json()
+
 
 class Space:
     def __init__(self, coords, piece):
         self.piece = None
+        self.color = color
         self.coords = coords
         self.top_rect = pygame.Rect(self.coords, (75, 75))
 
@@ -35,6 +55,8 @@ class Space:
         if self.top_rect.collidepoint(posm):
             if pygame.mouse.get_pressed()[0] is True:
                 # self.select()
+                pass
+
 
 # YELLOW PIECES CREATION
 yp1 = Piece('yellow', (50, 120))
