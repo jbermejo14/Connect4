@@ -3,8 +3,10 @@ import sys
 import json
 import requests
 
+import menu
+
 black = pygame.Color(0, 0, 0)
-white = pygame.Color(0, 0, 255)
+white = pygame.Color(255, 255, 255)
 gameDisplay = pygame.display.set_mode((1280, 800))
 pygame.init()
 pygame.display.set_caption("Connect4")
@@ -13,7 +15,6 @@ table = pygame.image.load("resources/board.png")
 yellow_piece_img = pygame.image.load("resources/yellow_piece.png")
 red_piece_img = pygame.image.load("resources/red_piece.png")
 gameDisplay.blit(table, (320, 160))
-
 API_GATEWAY_URL = "https://YOUR_API_GATEWAY_INVOKE_URL"
 
 
@@ -27,7 +28,7 @@ class Piece:
         if self.color == 'red':
             gameDisplay.blit(red_piece_img, (self.coords[0], self.coords[1], 10, 10))
 
-    # POSTS TO DYNAMO DB ("GAME_ID, SELF.PIECE, SELF.COLOR, SELF.COORDS(NEW COORDS))
+    # POSTS TO DYNAMO DB ("GAME_ID, SELF.PIECE, SELF.COLOR, SELF.COORDS(NEW COORDS)")
     # TODO
     # GRAPHICAL MOVEMENT
     def move(self, game_id):
@@ -46,7 +47,6 @@ class Piece:
 class Space:
     def __init__(self, coords, piece):
         self.piece = None
-        self.color = color
         self.coords = coords
         self.top_rect = pygame.Rect(self.coords, (75, 75))
 
@@ -105,6 +105,9 @@ rp19 = Piece('red', (1010, 600))
 rp20 = Piece('red', (1090, 600))
 rp21 = Piece('red', (1170, 600))
 
+font = pygame.font.SysFont(None, 30)
+img = font.render('Game Num: ' + str(menu.game_id), True, white)
+gameDisplay.blit(img, (10, 20))
 
 pygame.display.update()
 while not gameExit:
