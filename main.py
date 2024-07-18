@@ -3,19 +3,14 @@ import sys
 import json
 import requests
 
-import menu
-
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(255, 255, 255)
 gameDisplay = pygame.display.set_mode((1280, 800))
-pygame.init()
-pygame.display.set_caption("Connect4")
 gameExit = False
 table = pygame.image.load("resources/board.png")
 yellow_piece_img = pygame.image.load("resources/yellow_piece.png")
 red_piece_img = pygame.image.load("resources/red_piece.png")
-gameDisplay.blit(table, (320, 160))
-API_GATEWAY_URL = "https://YOUR_API_GATEWAY_INVOKE_URL"
+API_GATEWAY_URL = "https://jb1wabab38.execute-api.us-east-1.amazonaws.com/dev"
 
 
 class Piece:
@@ -58,60 +53,64 @@ class Space:
                 pass
 
 
-# YELLOW PIECES CREATION
-yp1 = Piece('yellow', (50, 120))
-yp2 = Piece('yellow', (130, 120))
-yp3 = Piece('yellow', (210, 120))
-yp4 = Piece('yellow', (50, 200))
-yp5 = Piece('yellow', (130, 200))
-yp6 = Piece('yellow', (210, 200))
-yp7 = Piece('yellow', (50, 280))
-yp8 = Piece('yellow', (130, 280))
-yp9 = Piece('yellow', (210, 280))
-yp10 = Piece('yellow', (50, 360))
-yp11 = Piece('yellow', (130, 360))
-yp12 = Piece('yellow', (210, 360))
-yp13 = Piece('yellow', (50, 440))
-yp14 = Piece('yellow', (130, 440))
-yp15 = Piece('yellow', (210, 440))
-yp16 = Piece('yellow', (50, 520))
-yp17 = Piece('yellow', (130, 520))
-yp18 = Piece('yellow', (210, 520))
-yp19 = Piece('yellow', (50, 600))
-yp20 = Piece('yellow', (130, 600))
-yp21 = Piece('yellow', (210, 600))
+def create_board(game_id):
+    gameDisplay.fill(black)
+    gameDisplay.blit(table, (320, 160))
+    # YELLOW PIECES CREATION
+    yp1 = Piece('yellow', (50, 120))
+    yp2 = Piece('yellow', (130, 120))
+    yp3 = Piece('yellow', (210, 120))
+    yp4 = Piece('yellow', (50, 200))
+    yp5 = Piece('yellow', (130, 200))
+    yp6 = Piece('yellow', (210, 200))
+    yp7 = Piece('yellow', (50, 280))
+    yp8 = Piece('yellow', (130, 280))
+    yp9 = Piece('yellow', (210, 280))
+    yp10 = Piece('yellow', (50, 360))
+    yp11 = Piece('yellow', (130, 360))
+    yp12 = Piece('yellow', (210, 360))
+    yp13 = Piece('yellow', (50, 440))
+    yp14 = Piece('yellow', (130, 440))
+    yp15 = Piece('yellow', (210, 440))
+    yp16 = Piece('yellow', (50, 520))
+    yp17 = Piece('yellow', (130, 520))
+    yp18 = Piece('yellow', (210, 520))
+    yp19 = Piece('yellow', (50, 600))
+    yp20 = Piece('yellow', (130, 600))
+    yp21 = Piece('yellow', (210, 600))
 
+    # RED PIECES CREATION
+    rp1 = Piece('red', (1010, 120))
+    rp2 = Piece('red', (1090, 120))
+    rp3 = Piece('red', (1170, 120))
+    rp4 = Piece('red', (1010, 200))
+    rp5 = Piece('red', (1090, 200))
+    rp6 = Piece('red', (1170, 200))
+    rp7 = Piece('red', (1010, 280))
+    rp8 = Piece('red', (1090, 280))
+    rp9 = Piece('red', (1170, 280))
+    rp10 = Piece('red', (1010, 360))
+    rp11 = Piece('red', (1090, 360))
+    rp12 = Piece('red', (1170, 360))
+    rp13 = Piece('red', (1010, 440))
+    rp14 = Piece('red', (1090, 440))
+    rp15 = Piece('red', (1170, 440))
+    rp16 = Piece('red', (1010, 520))
+    rp17 = Piece('red', (1090, 520))
+    rp18 = Piece('red', (1170, 520))
+    rp19 = Piece('red', (1010, 600))
+    rp20 = Piece('red', (1090, 600))
+    rp21 = Piece('red', (1170, 600))
 
-# RED PIECES CREATION
-rp1 = Piece('red', (1010, 120))
-rp2 = Piece('red', (1090, 120))
-rp3 = Piece('red', (1170, 120))
-rp4 = Piece('red', (1010, 200))
-rp5 = Piece('red', (1090, 200))
-rp6 = Piece('red', (1170, 200))
-rp7 = Piece('red', (1010, 280))
-rp8 = Piece('red', (1090, 280))
-rp9 = Piece('red', (1170, 280))
-rp10 = Piece('red', (1010, 360))
-rp11 = Piece('red', (1090, 360))
-rp12 = Piece('red', (1170, 360))
-rp13 = Piece('red', (1010, 440))
-rp14 = Piece('red', (1090, 440))
-rp15 = Piece('red', (1170, 440))
-rp16 = Piece('red', (1010, 520))
-rp17 = Piece('red', (1090, 520))
-rp18 = Piece('red', (1170, 520))
-rp19 = Piece('red', (1010, 600))
-rp20 = Piece('red', (1090, 600))
-rp21 = Piece('red', (1170, 600))
+    font = pygame.font.SysFont(None, 30)
+    img = font.render('Game Num: ' + str(game_id), True, white)
+    gameDisplay.blit(img, (10, 20))
 
-font = pygame.font.SysFont(None, 30)
-img = font.render('Game Num: ' + str(menu.game_id), True, white)
-gameDisplay.blit(img, (10, 20))
+    pygame.display.update()
 
-pygame.display.update()
-while not gameExit:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+    while not gameExit:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
