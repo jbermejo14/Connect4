@@ -15,7 +15,6 @@ end = True
 gameExit = False
 game_id = None
 data = []
-gamelist = []
 
 
 class Buttons:
@@ -76,8 +75,10 @@ def search_games():
 search_games()
 pygame.display.update()
 button1 = Buttons((515, 100))
+update = Buttons((50, 50))
 
 while not gameExit:
+    gamelist = []
     height = 200
     font = pygame.font.SysFont(None, 50)
     posm = pygame.mouse.get_pos()
@@ -91,6 +92,13 @@ while not gameExit:
         button1_img = pygame.image.load("resources/Buttons/creategame_button.png")
         gameDisplay.blit(button1_img, (528, 102, 218, 50))
 
+    if update.top_rect.collidepoint(posm):
+        update_img = pygame.image.load("resources/Buttons/update_button2.png")
+        gameDisplay.blit(update_img, (50, 50, 218, 50))
+    else:
+        update_img = pygame.image.load("resources/Buttons/update_button.png")
+        gameDisplay.blit(update_img, (55, 55, 218, 50))
+
     for game in data:
         game_text = font.render(f"Game ID: {game.get('ID')}", True, white)
         gameDisplay.blit(game_text, (525, height))
@@ -102,7 +110,9 @@ while not gameExit:
         posm = pygame.mouse.get_pos()
         if button1.top_rect.collidepoint(posm):
             create_game()
-
+        if update.top_rect.collidepoint(posm):
+            print(len(gamelist))
+            search_games()
         for i in gamelist:
             if i.top_rect.collidepoint(posm):
                 gameExit = True
@@ -112,4 +122,5 @@ while not gameExit:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+
     pygame.display.update()

@@ -56,6 +56,7 @@ class Space:
 def create_board(game_id):
     gameDisplay.fill(black)
     gameDisplay.blit(table, (320, 160))
+
     # YELLOW PIECES CREATION
     yp1 = Piece('yellow', (50, 120))
     yp2 = Piece('yellow', (130, 120))
