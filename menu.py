@@ -17,6 +17,7 @@ game_id = None
 data = []
 
 
+# CLASS FOR BUTTONS CREATION
 class Buttons:
     def __init__(self, coords):
         self.coords = coords
@@ -36,7 +37,7 @@ class Game:
         player2 = main.Player(2)
 
 
-# CREATES A MULTIPLAYER GAME
+# TRIGGERS LAMBDA FUNCTION 'CreateFunction' TO SEND THE GAME_ID TO DYNAMODB TABLE 'games'
 def create_game():
     global game_id
     game_id = random.randint(1, 10000)
@@ -60,6 +61,7 @@ def create_game():
         return {"error": "An error occurred", "details": str(err)}
 
 
+# TRIGGERS A LAMBDA FUNCTION TO GET THE LIST OF GAMES FROM DYNAMODB TABLE 'games'
 def search_games():
     global data
     try:
@@ -81,9 +83,13 @@ def search_games():
 
 search_games()
 pygame.display.update()
-button1 = Buttons((515, 100))
+create_game_button = Buttons((515, 100))
+
+# CREATES THE UPDATE BUTTON CLASS
 update = Buttons((50, 50))
 
+
+# MENU MAIN LOOP
 while not gameExit:
     gamelist = []
     height = 200
@@ -92,13 +98,16 @@ while not gameExit:
     gameDisplay.fill(black)
     img = font.render('Bienvenido a Connect4!', True, white)
     gameDisplay.blit(img, (440, 40))
-    if button1.top_rect.collidepoint(posm):
-        button1_img = pygame.image.load("resources/Buttons/creategame_button2.png")
-        gameDisplay.blit(button1_img, (520, 100, 218, 50))
-    else:
-        button1_img = pygame.image.load("resources/Buttons/creategame_button.png")
-        gameDisplay.blit(button1_img, (528, 102, 218, 50))
 
+    # CREATE GAME BUTTON AND ITS HOVER (IF MOUSE COLLIDES)
+    if create_game_button.top_rect.collidepoint(posm):
+        create_game_button_img = pygame.image.load("resources/Buttons/creategame_button2.png")
+        gameDisplay.blit(create_game_button_img, (520, 100, 218, 50))
+    else:
+        create_game_button_img = pygame.image.load("resources/Buttons/creategame_button.png")
+        gameDisplay.blit(create_game_button_img, (528, 102, 218, 50))
+
+    # CREATE UPDATE BUTTON AND ITS HOVER (IF MOUSE COLLIDES)
     if update.top_rect.collidepoint(posm):
         update_img = pygame.image.load("resources/Buttons/update_button2.png")
         gameDisplay.blit(update_img, (50, 50, 218, 50))
@@ -106,6 +115,7 @@ while not gameExit:
         update_img = pygame.image.load("resources/Buttons/update_button.png")
         gameDisplay.blit(update_img, (55, 55, 218, 50))
 
+    # CREATES THE LIST OF GAMES (RETRIEVED FROM THE SEARCH_GAMES() FUNCTION
     for game in data:
         game_text = font.render(f"Game ID: {game.get('ID')}", True, white)
         gameDisplay.blit(game_text, (525, height))
@@ -113,12 +123,12 @@ while not gameExit:
         gamelist.append(game)
         height += 70
 
+    # IF LEFT CLICK IS CLICKED, CHECKS IF IT CLICKED A BUTTON
     if pygame.mouse.get_pressed()[0] is True:
         posm = pygame.mouse.get_pos()
-        if button1.top_rect.collidepoint(posm):
+        if create_game_button.top_rect.collidepoint(posm):
             create_game()
         if update.top_rect.collidepoint(posm):
-            print(len(gamelist))
             search_games()
         for i in gamelist:
             if i.top_rect.collidepoint(posm):
