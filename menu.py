@@ -32,6 +32,9 @@ class Game:
     def join_game(self):
         main.create_board(self.game_id)
 
+        # Player joining the game gets 'id' num 2
+        player2 = main.Player(2)
+
 
 # CREATES A MULTIPLAYER GAME
 def create_game():
@@ -44,6 +47,10 @@ def create_game():
     try:
         response = requests.post(url, data=json.dumps(payload), headers=headers)
         response.raise_for_status()
+
+        # Assigns the 'Host' of the game 'id' num 1 for turn choosing
+        player1 = main.Player(1)
+        main.create_board(game_id)
         return response.json()
 
     except requests.exceptions.HTTPError as http_err:

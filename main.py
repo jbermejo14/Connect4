@@ -1,3 +1,4 @@
+import time
 import pygame
 import sys
 import json
@@ -12,6 +13,21 @@ yellow_piece_img = pygame.image.load("resources/yellow_piece.png")
 red_piece_img = pygame.image.load("resources/red_piece.png")
 API_GATEWAY_URL = "https://jb1wabab38.execute-api.us-east-1.amazonaws.com/dev"
 
+# TODO
+# GET 'OWN TURN' TO COMPARE WITH THE CURRENT TURN (1,2)
+# OWN TURN: IF YOU CREATED THE GAME (HOST) YOU ARE TURN 1, IF YOU JOIN YOU ARE TURN 2
+
+if not pygame.get_init():
+    pygame.init()
+
+if not pygame.font.get_init():
+    pygame.font.init()
+
+
+class Player:
+    def __init__(self, num):
+        self.num = num
+
 
 class Piece:
     def __init__(self, color, coords):
@@ -25,6 +41,7 @@ class Piece:
 
     # POSTS TO DYNAMO DB ("GAME_ID, SELF.PIECE, SELF.COLOR, SELF.COORDS(NEW COORDS)")
     # TODO
+    # ADD A CHECK IF THE OWN_TURN IS THE SAME AS THE CURRENT TURN
     # GRAPHICAL MOVEMENT
     def move(self, game_id):
         url = f"{API_GATEWAY_URL}/move"
@@ -41,21 +58,24 @@ class Piece:
 
 class Space:
     def __init__(self, coords, piece):
-        self.piece = None
+        self.piece = piece
         self.coords = coords
-        self.top_rect = pygame.Rect(self.coords, (75, 75))
+        self.top_rect = pygame.Rect(self.coords, (80, 80))
 
     def check_click(self):
+        global turn
         posm = pygame.mouse.get_pos()
         if self.top_rect.collidepoint(posm):
             if pygame.mouse.get_pressed()[0] is True:
-                # self.select()
                 pass
+#                 Add the lambda function move with the turn
 
 
 def create_board(game_id):
     gameDisplay.fill(black)
     gameDisplay.blit(table, (320, 160))
+
+    # CLASSES CREATION
 
     # YELLOW PIECES CREATION
     yp1 = Piece('yellow', (50, 120))
@@ -103,6 +123,68 @@ def create_board(game_id):
     rp20 = Piece('red', (1090, 600))
     rp21 = Piece('red', (1170, 600))
 
+    # Column 1
+    s1 = Space((335, 165), None)
+    s2 = Space((335, 245), None)
+    s3 = Space((335, 325), None)
+    s4 = Space((335, 405), None)
+    s5 = Space((335, 485), None)
+    s6 = Space((335, 565), None)
+
+    # Column 2
+    s7 = Space((425, 165), None)
+    s8 = Space((425, 245), None)
+    s9 = Space((425, 325), None)
+    s10 = Space((425, 405), None)
+    s11 = Space((425, 485), None)
+    s12 = Space((425, 565), None)
+
+    # Column 3
+    s13 = Space((515, 165), None)
+    s14 = Space((515, 245), None)
+    s15 = Space((515, 325), None)
+    s16 = Space((515, 405), None)
+    s17 = Space((515, 485), None)
+    s18 = Space((515, 565), None)
+
+    # Column 4
+    s19 = Space((605, 165), None)
+    s20 = Space((605, 245), None)
+    s21 = Space((605, 325), None)
+    s22 = Space((605, 405), None)
+    s23 = Space((605, 485), None)
+    s24 = Space((605, 565), None)
+
+    # Column 5
+    s25 = Space((695, 165), None)
+    s26 = Space((695, 245), None)
+    s27 = Space((695, 325), None)
+    s28 = Space((695, 405), None)
+    s29 = Space((695, 485), None)
+    s30 = Space((695, 565), None)
+
+    # Column 6
+    s31 = Space((785, 165), None)
+    s32 = Space((785, 245), None)
+    s33 = Space((785, 325), None)
+    s34 = Space((785, 405), None)
+    s35 = Space((785, 485), None)
+    s36 = Space((785, 565), None)
+
+    # Column 7
+    s37 = Space((875, 165), None)
+    s38 = Space((875, 245), None)
+    s39 = Space((875, 325), None)
+    s40 = Space((875, 405), None)
+    s41 = Space((875, 485), None)
+    s42 = Space((875, 565), None)
+
+    # LIST OF SPACES FOR MAKING THE CHECK_CLICK ON EACH OF THEM
+    column_list = [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20,
+                   s21, s22, s23, s24, s25, s26, s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
+                   s39, s40, s41, s42]
+
+    # ADDS THE GAME ID TO THE SCREEN
     font = pygame.font.SysFont(None, 30)
     img = font.render('Game Num: ' + str(game_id), True, white)
     gameDisplay.blit(img, (10, 20))
@@ -110,8 +192,18 @@ def create_board(game_id):
     pygame.display.update()
 
     while not gameExit:
+        # TODO
+        # CHECH IF IS YOUR TURN, IF IT IS YOUR TURN THEN DO THE SPACE.CHECK_CLICK()
+        # if turn == your_turn:
+        #   for i in column_list:
+        #       i.check_click()
+        #
+        for i in column_list:
+            i.check_click()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
+
+create_board(2312)
