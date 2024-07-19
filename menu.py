@@ -31,10 +31,23 @@ class Game:
         self.game_id = game_id
 
     def join_game(self):
-        main.create_board(self.game_id)
-
         # Player joining the game gets 'id' num 2
-        player2 = main.Player(2)
+        player = main.Player(2)
+        url = f"{API_GATEWAY_URL}/create"
+        payload = {"game_id": i.game_id, "players": 2}
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            response = requests.post(url, data=json.dumps(payload), headers=headers)
+            response.raise_for_status()
+            main.create_board(game_id, player)
+            return response.json()
+
+        except requests.exceptions.HTTPError as http_err:
+            return {"error": "HTTP error occurred", "details": str(http_err)}
+
+        except Exception as err:
+            return {"error": "An error occurred", "details": str(err)}
 
 
 # TRIGGERS LAMBDA FUNCTION 'CreateFunction' TO SEND THE GAME_ID TO DYNAMODB TABLE 'games'
@@ -42,7 +55,7 @@ def create_game():
     global game_id
     game_id = random.randint(1, 10000)
     url = f"{API_GATEWAY_URL}/create"
-    payload = {"game_id": game_id}
+    payload = {"game_id": game_id, "players": 1}
     headers = {"Content-Type": "application/json"}
 
     try:
@@ -50,8 +63,8 @@ def create_game():
         response.raise_for_status()
 
         # Assigns the 'Host' of the game 'id' num 1 for turn choosing
-        player1 = main.Player(1)
-        main.create_board(game_id)
+        player = main.Player(1)
+        main.create_board(game_id, player)
         return response.json()
 
     except requests.exceptions.HTTPError as http_err:
@@ -133,6 +146,7 @@ while not gameExit:
         for i in gamelist:
             if i.top_rect.collidepoint(posm):
                 gameExit = True
+                game_id = i.game_id
                 i.join_game()
 
     for event in pygame.event.get():

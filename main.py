@@ -13,9 +13,8 @@ yellow_piece_img = pygame.image.load("resources/yellow_piece.png")
 red_piece_img = pygame.image.load("resources/red_piece.png")
 API_GATEWAY_URL = "https://jb1wabab38.execute-api.us-east-1.amazonaws.com/dev"
 
-# TODO
-# GET 'OWN TURN' TO COMPARE WITH THE CURRENT TURN (1,2)
-# OWN TURN: IF YOU CREATED THE GAME (HOST) YOU ARE TURN 1, IF YOU JOIN YOU ARE TURN 2
+# GLOBAL TURN (CURRENT TURN) TO COMPARE WITH OWN TURN
+global_turn = 1
 
 if not pygame.get_init():
     pygame.init()
@@ -41,14 +40,15 @@ class Piece:
 
     # POSTS TO DYNAMO DB ("GAME_ID, SELF.PIECE, SELF.COLOR, SELF.COORDS(NEW COORDS)")
     # TODO
-    # ADD A CHECK IF THE OWN_TURN IS THE SAME AS THE CURRENT TURN
-    # GRAPHICAL MOVEMENT
+    #   ADD A CHECK IF THE OWN_TURN IS THE SAME AS THE CURRENT TURN
+    #   NEEDS TO CHANGE AND RETURN GLOBAL TURN!!!!!!!!
+    #   GRAPHICAL MOVEMENT
     def move(self, game_id):
         url = f"{API_GATEWAY_URL}/move"
         payload = {
             "game_id": game_id,
             "piece": self,
-            "color": self.color,
+            "turn": global_turn,
             "coords": self.coords
         }
         headers = {"Content-Type": "application/json"}
@@ -68,12 +68,22 @@ class Space:
         if self.top_rect.collidepoint(posm):
             if pygame.mouse.get_pressed()[0] is True:
                 pass
-#                 Add the lambda function move with the turn
+#             TODO
+#                   ADD THE MOVE FUNCTION
 
 
-def create_board(game_id):
+def create_board(game_id, player):
+    print(player)
+    def get_second_player():
+        # TODO
+        #   GET FROM DB IF A SECOND PLAYER HAS ENTER THE GAME
+        pass
+
     gameDisplay.fill(black)
     gameDisplay.blit(table, (320, 160))
+
+    # OWN_TURN IMPORTANT!!!
+    own_turn = player.num
 
     # CLASSES CREATION
 
@@ -193,17 +203,13 @@ def create_board(game_id):
 
     while not gameExit:
         # TODO
-        # CHECH IF IS YOUR TURN, IF IT IS YOUR TURN THEN DO THE SPACE.CHECK_CLICK()
-        # if turn == your_turn:
-        #   for i in column_list:
-        #       i.check_click()
-        #
-        for i in column_list:
-            i.check_click()
+        #   GET GET IF A SECOND PLAYER HAS CONNECTED THEN START THE GAME
+        #   UNTIL THEN, 'WAIT FOR SECOND PLAYER' TEXT SHOULD APPEAR
+        get_second_player()
+        if own_turn == global_turn:
+            for i in column_list:
+                i.check_click()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
-
-create_board(2312)
