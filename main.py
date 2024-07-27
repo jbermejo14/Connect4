@@ -4,6 +4,7 @@ import sys
 import json
 import requests
 
+
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(255, 255, 255)
 gameDisplay = pygame.display.set_mode((1280, 800))
@@ -68,16 +69,35 @@ class Space:
         if self.top_rect.collidepoint(posm):
             if pygame.mouse.get_pressed()[0] is True:
                 pass
+
+
 #             TODO
 #                   ADD THE MOVE FUNCTION
 
 
-def create_board(game_id, player):
-    print(player)
+def create_board(player, game_id):
+    # THIS IMPORT DOUBLES THE MENU
+    #   TODO
+    #       SOLVE IMPORT PROBLEM
+    #       IMPORT GAME_ID IN A WAY THAT DOESN'T IMPORT THE WHOLE FILE
     def get_second_player():
-        # TODO
-        #   GET FROM DB IF A SECOND PLAYER HAS ENTER THE GAME
-        pass
+        global data
+        search_type = 'players'
+        try:
+            url = f"{API_GATEWAY_URL}/search?search_type={search_type}&game_id={game_id}"
+            headers = {"Content-Type": "application/json"}
+
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                data = json.loads(response.json()['body'])
+
+            else:
+                print(f"Failed to retrieve games. Status Code: {response.status_code}")
+                print("Response:", response.text)
+
+        except Exception as e:
+            print("Exception occurred:", str(e))
 
     gameDisplay.fill(black)
     gameDisplay.blit(table, (320, 160))
