@@ -12,12 +12,11 @@ pygame.display.set_caption("Connect4")
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(255, 0, 255)
 end = True
-gameExit = False
-game_id = None
-data = []
-gamelist = []
+menuExit = False
+game_list = []
 
 
+# CLASS FOR BUTTONS CREATION
 class Buttons:
     def __init__(self, coords):
         self.coords = coords
@@ -31,20 +30,40 @@ class Game:
         self.game_id = game_id
 
     def join_game(self):
-        main.create_board(self.game_id)
+        # Player joining the game gets 'id' num 2
+        player = main.Player(2)
+        url = f"{API_GATEWAY_URL}/create"
+        payload = {"game_id": i.game_id, "players": 2}
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            response = requests.post(url, data=json.dumps(payload), headers=headers)
+            response.raise_for_status()
+            main.create_board(player, game_id)
+            return response.json()
+
+        except requests.exceptions.HTTPError as http_err:
+            return {"error": "HTTP error occurred", "details": str(http_err)}
+
+        except Exception as err:
+            return {"error": "An error occurred", "details": str(err)}
 
 
-# CREATES A MULTIPLAYER GAME
+# TRIGGERS LAMBDA FUNCTION 'CreateFunction' TO SEND THE GAME_ID TO DYNAMODB TABLE 'games'
 def create_game():
     global game_id
     game_id = random.randint(1, 10000)
     url = f"{API_GATEWAY_URL}/create"
-    payload = {"game_id": game_id}
+    payload = {"game_id": game_id, "players": 1}
     headers = {"Content-Type": "application/json"}
 
     try:
         response = requests.post(url, data=json.dumps(payload), headers=headers)
         response.raise_for_status()
+
+        # Assigns the 'Host' of the game 'id' num 1 for turn choosing
+        player = main.Player(1)
+        main.create_board(player, game_id)
         return response.json()
 
     except requests.exceptions.HTTPError as http_err:
@@ -54,8 +73,9 @@ def create_game():
         return {"error": "An error occurred", "details": str(err)}
 
 
+# TRIGGERS A LAMBDA FUNCTION TO GET THE LIST OF GAMES FROM DYNAMODB TABLE 'games'
 def search_games():
-    global data
+    global game_list
     try:
         url = f"{API_GATEWAY_URL}/search"
         headers = {"Content-Type": "application/json"}
@@ -63,7 +83,7 @@ def search_games():
         response = requests.get(url, headers=headers)
 
         if response.status_code == 200:
-            data = json.loads(response.json()['body'])
+            game_list = json.loads(response.json()['body'])
 
         else:
             print(f"Failed to retrieve games. Status Code: {response.status_code}")
@@ -75,41 +95,64 @@ def search_games():
 
 search_games()
 pygame.display.update()
-button1 = Buttons((515, 100))
+create_game_button = Buttons((515, 100))
 
-while not gameExit:
-    height = 200
-    font = pygame.font.SysFont(None, 50)
-    posm = pygame.mouse.get_pos()
-    gameDisplay.fill(black)
-    img = font.render('Bienvenido a Connect4!', True, white)
-    gameDisplay.blit(img, (440, 40))
-    if button1.top_rect.collidepoint(posm):
-        button1_img = pygame.image.load("resources/Buttons/creategame_button2.png")
-        gameDisplay.blit(button1_img, (520, 100, 218, 50))
-    else:
-        button1_img = pygame.image.load("resources/Buttons/creategame_button.png")
-        gameDisplay.blit(button1_img, (528, 102, 218, 50))
+# CREATES THE UPDATE BUTTON CLASS
+update = Buttons((50, 50))
 
-    for game in data:
-        game_text = font.render(f"Game ID: {game.get('ID')}", True, white)
-        gameDisplay.blit(game_text, (525, height))
-        game = Game((525, height), game.get('ID'))
-        gamelist.append(game)
-        height += 70
-
-    if pygame.mouse.get_pressed()[0] is True:
+# MENU MAIN LOOP
+if __name__ == "__main__":
+    while not menuExit:
+        gamelist = []
+        height = 200
+        font = pygame.font.SysFont(None, 50)
         posm = pygame.mouse.get_pos()
-        if button1.top_rect.collidepoint(posm):
-            create_game()
+        gameDisplay.fill(black)
+        img = font.render('Bienvenido a Connect4!', True, white)
+        gameDisplay.blit(img, (440, 40))
 
-        for i in gamelist:
-            if i.top_rect.collidepoint(posm):
-                gameExit = True
-                i.join_game()
+        # CREATE GAME BUTTON AND ITS HOVER (IF MOUSE COLLIDES)
+        if create_game_button.top_rect.collidepoint(posm):
+            create_game_button_img = pygame.image.load("resources/Buttons/creategame_button2.png")
+            gameDisplay.blit(create_game_button_img, (520, 100, 218, 50))
+        else:
+            create_game_button_img = pygame.image.load("resources/Buttons/creategame_button.png")
+            gameDisplay.blit(create_game_button_img, (528, 102, 218, 50))
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-    pygame.display.update()
+        # CREATE UPDATE BUTTON AND ITS HOVER (IF MOUSE COLLIDES)
+        if update.top_rect.collidepoint(posm):
+            update_img = pygame.image.load("resources/Buttons/update_button2.png")
+            gameDisplay.blit(update_img, (50, 50, 218, 50))
+        else:
+            update_img = pygame.image.load("resources/Buttons/update_button.png")
+            gameDisplay.blit(update_img, (55, 55, 218, 50))
+
+        # CREATES THE LIST OF GAMES (RETRIEVED FROM THE SEARCH_GAMES() FUNCTION
+        for g in game_list:
+            game_text = font.render(f"Game ID: {g.get('ID')}", True, white)
+            gameDisplay.blit(game_text, (525, height))
+            game = Game((525, height), g.get('ID'))
+            gamelist.append(game)
+            height += 70
+
+        # IF LEFT CLICK IS CLICKED, CHECKS IF IT CLICKED A BUTTON
+        if pygame.mouse.get_pressed()[0] is True:
+            posm = pygame.mouse.get_pos()
+            if create_game_button.top_rect.collidepoint(posm):
+                menuExit = True
+                create_game()
+            if update.top_rect.collidepoint(posm):
+                search_games()
+            for i in gamelist:
+                if i.top_rect.collidepoint(posm):
+                    menuExit = True
+                    game_id = i.game_id
+                    i.join_game()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        pygame.display.update()
+
