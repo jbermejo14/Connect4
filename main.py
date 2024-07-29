@@ -4,6 +4,10 @@ import pygame
 import sys
 import json
 import requests
+import os
+
+from dotenv import load_dotenv
+load_dotenv()
 
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(255, 255, 255)
@@ -12,7 +16,8 @@ gameExit = False
 table = pygame.image.load("resources/board.png")
 yellow_piece_img = pygame.image.load("resources/yellow_piece.png")
 red_piece_img = pygame.image.load("resources/red_piece.png")
-API_GATEWAY_URL = "https://jb1wabab38.execute-api.us-east-1.amazonaws.com/dev"
+
+API_GATEWAY_URL = os.getenv('AWS_API_GW_URL')
 move = 0
 game_id = None
 yellow_list = []
@@ -46,11 +51,12 @@ class Piece:
     # SENDS THE MOVE TO THE LAMBDA FUNCTION TO THEN PUT IT IN DYNAMO DB TABLE
     def lambda_move(self, game_id):
         move_id = random.randint(1, 100000)
+        print(move)
         url = f"{API_GATEWAY_URL}/move"
         payload = {
             "move_id": move_id,
             "game_id": game_id,
-            "piece": str(self),
+            "move": str(move),
             "turn": global_turn,
             "coords": self.coords
         }
@@ -108,6 +114,23 @@ def refresh():
         gameDisplay.blit(red_piece_img, (r.coords[0], r.coords[1], 10, 10))
     pygame.display.update()
 
+def get_status(game_id):
+    try:
+        url = f"{API_GATEWAY_URL}/status?search_type={piece}&game_id={game_id}"
+        headers = {"Content-Type": "application/json"}
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            game_list = json.loads(response.json()['body'])
+
+        else:
+            print(f"Failed to retrieve games. Status Code: {response.status_code}")
+            print("Response:", response.text)
+
+    except Exception as e:
+        print("Exception occurred:", str(e))
+
 
 class Space:
     def __init__(self, coords, piece):
@@ -132,10 +155,10 @@ class Space:
                 pygame.display.update()
                 move = move + 1
 
-                if global_turn == 1:
-                    global_turn = 2
-                elif global_turn == 2:
-                    global_turn = 1
+                # if global_turn == 1:
+                #     global_turn = 2
+                # elif global_turn == 2:
+                #     global_turn = 1
 
                 time.sleep(0.7)
 
@@ -161,7 +184,6 @@ def create_board(player, gameid):
                         img = font.render('Waiting for second player', True, white)
                         gameDisplay.blit(img, (440, 40))
                         pygame.display.update()
-
                         players = 1
                         return players
 
