@@ -8,6 +8,7 @@ import requests
 import os
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 black = pygame.Color(0, 0, 0)
@@ -19,12 +20,11 @@ yellow_piece_img = pygame.image.load("resources/yellow_piece.png")
 red_piece_img = pygame.image.load("resources/red_piece.png")
 
 API_GATEWAY_URL = os.getenv('AWS_API_GW_URL')
-move = 0
+move = 1
 game_id = None
 yellow_list = []
 red_list = []
-piece_list = []
-move_list = []
+piece_list = {}
 
 # GLOBAL TURN (CURRENT TURN) TO COMPARE WITH OWN TURN
 global_turn = 1
@@ -93,7 +93,6 @@ class Piece:
             self.coords = [space.coords[0], 165]
         if num == 6:
             pass
-        gameDisplay.blit(yellow_piece_img, (self.coords[0], self.coords[1], 10, 10))
         pygame.display.update()
 
     # POSTS TO DYNAMO DB ("GAME_ID, SELF.PIECE, SELF.COLOR, SELF.COORDS(NEW COORDS)")
@@ -111,7 +110,7 @@ def refresh():
     img = font.render('Game Num: ' + str(game_id), True, white)
     gameDisplay.blit(img, (10, 20))
     try:
-        for i in piece_list:
+        for i in piece_list.values():
             if i.color == 'red':
                 gameDisplay.blit(red_piece_img, (i.coords[0], i.coords[1], 10, 10))
             elif i.color == 'yellow':
@@ -123,7 +122,7 @@ def refresh():
 
 
 def get_status(game_id):
-    global move_list
+    global move_list, global_turn, move
     try:
         url = f"{API_GATEWAY_URL}/status"
         headers = {"Content-Type": "application/json"}
@@ -132,23 +131,47 @@ def get_status(game_id):
 
         if response.status_code == 200:
             move_data_list = json.loads(response.json()['body'])
+            move_list = []
+            # TODO
+            #   OPTIMIZE THIS BIT BY DOING THE FILTERING IN LAMBDA
             for data_move in move_data_list:
                 if data_move["game_id"] == str(game_id):
-                    item = [data_move["move"], data_move["coords"]]
+                    data_move["coords"] = ast.literal_eval(data_move["coords"])  # STR TO LIST
+                    item = [data_move["coords"]]
                     if item not in move_list:
                         move_list.append(item)
-
+                    move = len(move_list)
                     for i in move_list:
-                        i[0] = int(i[0])
                         try:
-                            i[1] = ast.literal_eval(i[1])   # STR TO LIST
+                            if type(i[0]) == str:
+                                i[0] = ast.literal_eval(i[0])  # STR TO LIST
+
                         except (ValueError, SyntaxError) as e:
                             print(f"Error converting string to list: {e}")
 
                         try:
-                            piece_list[i[0]].coords = i[1]
+                            print(piece_list.get(move).coords, i[0])
+                            # TODO
+                            #   THIS IS WHAT THE TOP PRINT PRINTS, THAT IS WHY THE PIECES CHANGE COLOR
+                            # [515, 565][515, 565]
+                            # [605, 565][515, 565]
+                            # [515, 565][605, 565]
+
+                            piece_list.get(move).coords = i[0]
+                            for col in cols:
+                                for piece in col:
+                                    if piece.coords == piece_list.get(move).coords:
+                                        if piece not in col:
+                                            col.append(piece)
+
                         except Exception as e:
                             print("Exception occurred in data_move:", str(e))
+            if move % 2 != 0:
+                global_turn = 1
+                print(move, "change to 1")
+            elif move % 2 == 0:
+                global_turn = 2
+                print(move, "change to 2")
 
         else:
             print(f"Failed to retrieve games. Status Code: {response.status_code}")
@@ -176,22 +199,14 @@ class Space:
         if self.top_rect.collidepoint(posm):
             if pygame.mouse.get_pressed()[0] is True:
                 col = self.get_col()
-                yellow_list[move].graphical_move(col, self, yellow_list[move])
-                refresh()
+                piece_list.get(move).graphical_move(col, self, piece_list.get(move))
                 pygame.display.update()
-                move = move + 1
                 get_status(game_id)
-
-                if global_turn == 1:
-                    global_turn = 2
-                elif global_turn == 2:
-                    global_turn = 1
-
-                time.sleep(0.7)
+                time.sleep(0.5)
 
 
 def create_board(player, gameid):
-    global yellow_list, red_list, game_id, cols, piece_list
+    global yellow_list, red_list, game_id, cols, piece_list, global_turn
     game_id = gameid
 
     def get_second_player():
@@ -350,18 +365,24 @@ def create_board(player, gameid):
     cols = [col1, col2, col3, col4, col5, col6, col7]
 
     # LIST OF SPACES FOR MAKING THE CHECK_CLICK ON EACH OF THEM
-    column_list = [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20,
-                   s21, s22, s23, s24, s25, s26, s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
-                   s39, s40, s41, s42]
+    column_list: list[Space] = [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19,
+                                s20, s21, s22, s23, s24, s25, s26, s27, s28, s29, s30, s31, s32, s33, s34, s35, s36,
+                                s37, s38,
+                                s39, s40, s41, s42]
 
-    piece_list = [yp1, rp1, yp2, rp2, yp3, rp3, yp4, rp4, yp5, rp5, yp6, rp6, yp7, rp7, yp8, rp8, yp9, rp9, yp10, rp10,
-                   yp11, rp11, yp12, rp12, yp13, rp13, yp14, rp14, yp15, rp15, yp16, rp16, yp17, rp17, yp18, rp18, yp19,
-                   rp19, yp20, rp20, yp21, rp21]
+    # piece_list = [yp1, rp1, yp2, rp2, yp3, rp3, yp4, rp4, yp5, rp5, yp6, rp6, yp7, rp7, yp8, rp8, yp9, rp9, yp10, rp10,
+    #                yp11, rp11, yp12, rp12, yp13, rp13, yp14, rp14, yp15, rp15, yp16, rp16, yp17, rp17, yp18, rp18, yp19,
+    #                rp19, yp20, rp20, yp21, rp21]
 
-    yellow_list = [piece_list[0], piece_list[2], piece_list[4]]
-
-    red_list = [rp1, rp2, rp3, rp4, rp5, rp6, rp7, rp8, rp9, rp10, rp11, rp12, rp13, rp14, rp15, rp16, rp17, rp18, rp19,
-                rp20, rp21]
+    piece_list = {
+        1: yp1, 2: rp1, 3: yp2, 4: rp2, 5: yp3, 6: rp3,
+        7: yp4, 8: rp4, 9: yp5, 10: rp5, 11: yp6, 12: rp6,
+        13: yp7, 14: rp7, 15: yp8, 16: rp8, 17: yp9, 18: rp9,
+        19: yp10, 20: rp10, 21: yp11, 22: rp11, 23: yp12, 24: rp12,
+        25: yp13, 26: rp13, 27: yp14, 28: rp14, 29: yp15, 30: rp15,
+        31: yp16, 32: rp16, 33: yp17, 34: rp17, 35: yp18, 36: rp18,
+        37: yp19, 38: rp19, 39: yp20, 40: rp20, 41: yp21, 42: rp21
+    }
 
     # ADDS THE GAME ID TO THE SCREEN
     font = pygame.font.SysFont(None, 30)
@@ -383,8 +404,6 @@ def create_board(player, gameid):
         # TODO
         #   AFTER A MOVE (TOUCHING A SPACE) IT SHOULD CHANGE TURN
 
-        print(own_turn)
-        print(global_turn)
         if own_turn == global_turn:
             for i in column_list:
                 i.check_click()
