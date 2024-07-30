@@ -1,3 +1,4 @@
+import ast
 import time
 import random
 import pygame
@@ -22,6 +23,8 @@ move = 0
 game_id = None
 yellow_list = []
 red_list = []
+piece_list = []
+move_list = []
 
 # GLOBAL TURN (CURRENT TURN) TO COMPARE WITH OWN TURN
 global_turn = 1
@@ -51,7 +54,6 @@ class Piece:
     # SENDS THE MOVE TO THE LAMBDA FUNCTION TO THEN PUT IT IN DYNAMO DB TABLE
     def lambda_move(self, game_id):
         move_id = random.randint(1, 100000)
-        print(move)
         url = f"{API_GATEWAY_URL}/move"
         payload = {
             "move_id": move_id,
@@ -108,28 +110,52 @@ def refresh():
     font = pygame.font.SysFont(None, 30)
     img = font.render('Game Num: ' + str(game_id), True, white)
     gameDisplay.blit(img, (10, 20))
-    for y in yellow_list:
-        gameDisplay.blit(yellow_piece_img, (y.coords[0], y.coords[1], 10, 10))
-    for r in red_list:
-        gameDisplay.blit(red_piece_img, (r.coords[0], r.coords[1], 10, 10))
+    try:
+        for i in piece_list:
+            if i.color == 'red':
+                gameDisplay.blit(red_piece_img, (i.coords[0], i.coords[1], 10, 10))
+            elif i.color == 'yellow':
+                gameDisplay.blit(yellow_piece_img, (i.coords[0], i.coords[1], 10, 10))
+    except Exception as e:
+        print(e)
+    get_status(game_id)
     pygame.display.update()
 
+
 def get_status(game_id):
+    global move_list
     try:
-        url = f"{API_GATEWAY_URL}/status?search_type={piece}&game_id={game_id}"
+        url = f"{API_GATEWAY_URL}/status"
         headers = {"Content-Type": "application/json"}
 
         response = requests.get(url, headers=headers)
 
         if response.status_code == 200:
-            game_list = json.loads(response.json()['body'])
+            move_data_list = json.loads(response.json()['body'])
+            for data_move in move_data_list:
+                if data_move["game_id"] == str(game_id):
+                    item = [data_move["move"], data_move["coords"]]
+                    if item not in move_list:
+                        move_list.append(item)
+
+                    for i in move_list:
+                        i[0] = int(i[0])
+                        try:
+                            i[1] = ast.literal_eval(i[1])   # STR TO LIST
+                        except (ValueError, SyntaxError) as e:
+                            print(f"Error converting string to list: {e}")
+
+                        try:
+                            piece_list[i[0]].coords = i[1]
+                        except Exception as e:
+                            print("Exception occurred in data_move:", str(e))
 
         else:
             print(f"Failed to retrieve games. Status Code: {response.status_code}")
             print("Response:", response.text)
 
     except Exception as e:
-        print("Exception occurred:", str(e))
+        print("Exception occurred in get status:", str(e))
 
 
 class Space:
@@ -154,17 +180,18 @@ class Space:
                 refresh()
                 pygame.display.update()
                 move = move + 1
+                get_status(game_id)
 
-                # if global_turn == 1:
-                #     global_turn = 2
-                # elif global_turn == 2:
-                #     global_turn = 1
+                if global_turn == 1:
+                    global_turn = 2
+                elif global_turn == 2:
+                    global_turn = 1
 
                 time.sleep(0.7)
 
 
 def create_board(player, gameid):
-    global yellow_list, red_list, game_id, cols
+    global yellow_list, red_list, game_id, cols, piece_list
     game_id = gameid
 
     def get_second_player():
@@ -211,50 +238,50 @@ def create_board(player, gameid):
     # CLASSES CREATION
 
     # YELLOW PIECES CREATION
-    yp1 = Piece('yellow', (50, 120))
-    yp2 = Piece('yellow', (130, 120))
-    yp3 = Piece('yellow', (210, 120))
-    yp4 = Piece('yellow', (50, 200))
-    yp5 = Piece('yellow', (130, 200))
-    yp6 = Piece('yellow', (210, 200))
-    yp7 = Piece('yellow', (50, 280))
-    yp8 = Piece('yellow', (130, 280))
-    yp9 = Piece('yellow', (210, 280))
-    yp10 = Piece('yellow', (50, 360))
-    yp11 = Piece('yellow', (130, 360))
-    yp12 = Piece('yellow', (210, 360))
-    yp13 = Piece('yellow', (50, 440))
-    yp14 = Piece('yellow', (130, 440))
-    yp15 = Piece('yellow', (210, 440))
-    yp16 = Piece('yellow', (50, 520))
-    yp17 = Piece('yellow', (130, 520))
-    yp18 = Piece('yellow', (210, 520))
-    yp19 = Piece('yellow', (50, 600))
-    yp20 = Piece('yellow', (130, 600))
-    yp21 = Piece('yellow', (210, 600))
+    yp1 = Piece('yellow', [50, 120])
+    yp2 = Piece('yellow', [130, 120])
+    yp3 = Piece('yellow', [210, 120])
+    yp4 = Piece('yellow', [50, 200])
+    yp5 = Piece('yellow', [130, 200])
+    yp6 = Piece('yellow', [210, 200])
+    yp7 = Piece('yellow', [50, 280])
+    yp8 = Piece('yellow', [130, 280])
+    yp9 = Piece('yellow', [210, 280])
+    yp10 = Piece('yellow', [50, 360])
+    yp11 = Piece('yellow', [130, 360])
+    yp12 = Piece('yellow', [210, 360])
+    yp13 = Piece('yellow', [50, 440])
+    yp14 = Piece('yellow', [130, 440])
+    yp15 = Piece('yellow', [210, 440])
+    yp16 = Piece('yellow', [50, 520])
+    yp17 = Piece('yellow', [130, 520])
+    yp18 = Piece('yellow', [210, 520])
+    yp19 = Piece('yellow', [50, 600])
+    yp20 = Piece('yellow', [130, 600])
+    yp21 = Piece('yellow', [210, 600])
 
     # RED PIECES CREATION
-    rp1 = Piece('red', (1010, 120))
-    rp2 = Piece('red', (1090, 120))
-    rp3 = Piece('red', (1170, 120))
-    rp4 = Piece('red', (1010, 200))
-    rp5 = Piece('red', (1090, 200))
-    rp6 = Piece('red', (1170, 200))
-    rp7 = Piece('red', (1010, 280))
-    rp8 = Piece('red', (1090, 280))
-    rp9 = Piece('red', (1170, 280))
-    rp10 = Piece('red', (1010, 360))
-    rp11 = Piece('red', (1090, 360))
-    rp12 = Piece('red', (1170, 360))
-    rp13 = Piece('red', (1010, 440))
-    rp14 = Piece('red', (1090, 440))
-    rp15 = Piece('red', (1170, 440))
-    rp16 = Piece('red', (1010, 520))
-    rp17 = Piece('red', (1090, 520))
-    rp18 = Piece('red', (1170, 520))
-    rp19 = Piece('red', (1010, 600))
-    rp20 = Piece('red', (1090, 600))
-    rp21 = Piece('red', (1170, 600))
+    rp1 = Piece('red', [1010, 120])
+    rp2 = Piece('red', [1090, 120])
+    rp3 = Piece('red', [1170, 120])
+    rp4 = Piece('red', [1010, 200])
+    rp5 = Piece('red', [1090, 200])
+    rp6 = Piece('red', [1170, 200])
+    rp7 = Piece('red', [1010, 280])
+    rp8 = Piece('red', [1090, 280])
+    rp9 = Piece('red', [1170, 280])
+    rp10 = Piece('red', [1010, 360])
+    rp11 = Piece('red', [1090, 360])
+    rp12 = Piece('red', [1170, 360])
+    rp13 = Piece('red', [1010, 440])
+    rp14 = Piece('red', [1090, 440])
+    rp15 = Piece('red', [1170, 440])
+    rp16 = Piece('red', [1010, 520])
+    rp17 = Piece('red', [1090, 520])
+    rp18 = Piece('red', [1170, 520])
+    rp19 = Piece('red', [1010, 600])
+    rp20 = Piece('red', [1090, 600])
+    rp21 = Piece('red', [1170, 600])
 
     # Column 1
     s1 = Space((335, 165), None)
@@ -327,8 +354,11 @@ def create_board(player, gameid):
                    s21, s22, s23, s24, s25, s26, s27, s28, s29, s30, s31, s32, s33, s34, s35, s36, s37, s38,
                    s39, s40, s41, s42]
 
-    yellow_list = [yp1, yp2, yp3, yp4, yp5, yp6, yp7, yp8, yp9, yp10, yp11, yp12, yp13, yp14, yp15, yp16, yp17, yp18,
-                   yp19, yp20, yp21]
+    piece_list = [yp1, rp1, yp2, rp2, yp3, rp3, yp4, rp4, yp5, rp5, yp6, rp6, yp7, rp7, yp8, rp8, yp9, rp9, yp10, rp10,
+                   yp11, rp11, yp12, rp12, yp13, rp13, yp14, rp14, yp15, rp15, yp16, rp16, yp17, rp17, yp18, rp18, yp19,
+                   rp19, yp20, rp20, yp21, rp21]
+
+    yellow_list = [piece_list[0], piece_list[2], piece_list[4]]
 
     red_list = [rp1, rp2, rp3, rp4, rp5, rp6, rp7, rp8, rp9, rp10, rp11, rp12, rp13, rp14, rp15, rp16, rp17, rp18, rp19,
                 rp20, rp21]
@@ -341,23 +371,24 @@ def create_board(player, gameid):
     pygame.display.update()
     players = get_second_player()
 
-    # TODO
-    #   REMOVED FOR TESTING
-    # while players == 1:
-    #     players = get_second_player()
-    #
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             pygame.quit()
-    #             sys.exit()
+    while players == 1:
+        players = get_second_player()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
 
     while not gameExit:
         # TODO
         #   AFTER A MOVE (TOUCHING A SPACE) IT SHOULD CHANGE TURN
+
+        print(own_turn)
+        print(global_turn)
         if own_turn == global_turn:
             for i in column_list:
                 i.check_click()
-
+        refresh()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
