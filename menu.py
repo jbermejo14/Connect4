@@ -131,9 +131,17 @@ if __name__ == "__main__":
 
         # CREATES THE LIST OF GAMES (RETRIEVED FROM THE SEARCH_GAMES() FUNCTION
         for g in game_list:
-            game_text = font.render(f"Game ID: {g.get('ID')}", True, white)
-            gameDisplay.blit(game_text, (525, height))
             game = Game((525, height), g.get('ID'))
+            if game.top_rect.collidepoint(posm):
+                big_game_font = pygame.font.SysFont(None, 55)
+                game_text = big_game_font.render(f"GAME ID: {g.get('ID')}", True, white)
+                gameDisplay.blit(game_text, (505, height))
+
+            else:
+                small_game_font = pygame.font.SysFont(None, 50)
+                game_text = small_game_font.render(f"GAME ID: {g.get('ID')}", True, white)
+                gameDisplay.blit(game_text, (515, height))
+
             gamelist.append(game)
             height += 70
 
