@@ -13,18 +13,20 @@ load_dotenv()
 
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(255, 255, 255)
-gameDisplay = pygame.display.set_mode((1280, 800))
+# gameDisplay = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+gameDisplay = pygame.display.set_mode((1200, 800))
+
 gameExit = False
 table = pygame.image.load("resources/board.png")
 yellow_piece_img = pygame.image.load("resources/yellow_piece.png")
 red_piece_img = pygame.image.load("resources/red_piece.png")
 
 API_GATEWAY_URL = os.getenv('AWS_API_GW_URL')
-move = 1
 game_id = None
 yellow_list = []
 red_list = []
 piece_list = {}
+move = 1
 
 # GLOBAL TURN (CURRENT TURN) TO COMPARE WITH OWN TURN
 global_turn = 1
@@ -58,8 +60,6 @@ class Piece:
         payload = {
             "move_id": move_id,
             "game_id": game_id,
-            "move": str(move),
-            "turn": global_turn,
             "coords": self.coords
         }
         headers = {"Content-Type": "application/json"}
@@ -117,7 +117,6 @@ def refresh():
                 gameDisplay.blit(yellow_piece_img, (i.coords[0], i.coords[1], 10, 10))
     except Exception as e:
         print(e)
-    get_status(game_id)
     pygame.display.update()
 
 
@@ -140,32 +139,42 @@ def get_status(game_id):
                     item = [data_move["coords"]]
                     if item not in move_list:
                         move_list.append(item)
-                    move = len(move_list)
-                    for i in move_list:
-                        try:
-                            if type(i[0]) == str:
-                                i[0] = ast.literal_eval(i[0])  # STR TO LIST
+                move = len(move_list)
 
-                        except (ValueError, SyntaxError) as e:
-                            print(f"Error converting string to list: {e}")
+                for i in move_list:
+                    try:
+                        if type(i[0]) == str:
+                            i[0] = ast.literal_eval(i[0])  # STR TO LIST
 
-                        try:
-                            print(piece_list.get(move).coords, i[0])
-                            # TODO
-                            #   THIS IS WHAT THE TOP PRINT PRINTS, THAT IS WHY THE PIECES CHANGE COLOR
-                            # [515, 565][515, 565]
-                            # [605, 565][515, 565]
-                            # [515, 565][605, 565]
+                    except (ValueError, SyntaxError) as e:
+                        print(f"Error converting string to list: {e}")
 
-                            piece_list.get(move).coords = i[0]
-                            for col in cols:
-                                for piece in col:
-                                    if piece.coords == piece_list.get(move).coords:
-                                        if piece not in col:
-                                            col.append(piece)
+                    try:
+                        print(piece_list.get(move).coords, i[0], move)
 
-                        except Exception as e:
-                            print("Exception occurred in data_move:", str(e))
+                        # TODO
+                        #   THIS IS WHAT THE TOP PRINT PRINTS, THAT IS WHY THE PIECES CHANGE COLOR
+
+                        # [515, 565][515, 565]
+                        # [605, 565][515, 565]
+                        # [515, 565][605, 565]
+
+                        piece_list.get(move).coords = i[0]
+
+                        for col in cols:
+                            for piece in col:
+                                if piece.coords == piece_list.get(move).coords:
+                                    if piece not in col:
+
+                                        # TODO
+                                        #   THIS WORKED BUT ONLY COULD SEE OWN PIECES
+                                        # piece_list.get(move).coords = i[0]
+
+                                        col.append(piece)
+
+                    except Exception as e:
+                        print("Exception occurred in data_move:", str(e))
+                print("end")
             if move % 2 != 0:
                 global_turn = 1
                 print(move, "change to 1")
@@ -176,6 +185,7 @@ def get_status(game_id):
         else:
             print(f"Failed to retrieve games. Status Code: {response.status_code}")
             print("Response:", response.text)
+        refresh()
 
     except Exception as e:
         print("Exception occurred in get status:", str(e))
@@ -202,7 +212,7 @@ class Space:
                 piece_list.get(move).graphical_move(col, self, piece_list.get(move))
                 pygame.display.update()
                 get_status(game_id)
-                time.sleep(0.5)
+                # time.sleep(0.5)
 
 
 def create_board(player, gameid):
@@ -392,13 +402,13 @@ def create_board(player, gameid):
     pygame.display.update()
     players = get_second_player()
 
-    while players == 1:
-        players = get_second_player()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+    # while players == 1:
+    #     players = get_second_player()
+    #
+    #     for event in pygame.event.get():
+    #         if event.type == pygame.QUIT:
+    #             pygame.quit()
+    #             sys.exit()
 
     while not gameExit:
         # TODO
@@ -407,8 +417,10 @@ def create_board(player, gameid):
         if own_turn == global_turn:
             for i in column_list:
                 i.check_click()
-        refresh()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
+# TODO
+#   SPACES HAVE AN ATTRIBUTE CALLED PIECE TO INDICATE IF THERE IS A PIECE INSIDE IT, MAYBE USE IT

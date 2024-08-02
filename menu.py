@@ -5,7 +5,9 @@ import json
 import sys
 import main
 
-gameDisplay = pygame.display.set_mode((1280, 800))
+# gameDisplay = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+gameDisplay = pygame.display.set_mode((1200, 800))
+
 API_GATEWAY_URL = "https://jb1wabab38.execute-api.us-east-1.amazonaws.com/dev"
 pygame.init()
 pygame.display.set_caption("Connect4")
