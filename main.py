@@ -13,7 +13,6 @@ load_dotenv()
 
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(255, 255, 255)
-# gameDisplay = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 gameDisplay = pygame.display.set_mode((1200, 800))
 
 gameExit = False
@@ -66,6 +65,8 @@ class Piece:
         response = requests.post(url, data=json.dumps(payload), headers=headers)
         return response.json()
 
+
+    # WORKS OK NO NEED TO CHANGE ANYTHING
     def graphical_move(self, col, space, piece):
         num = 0
         for i in col:
@@ -95,11 +96,6 @@ class Piece:
             pass
         pygame.display.update()
 
-    # POSTS TO DYNAMO DB ("GAME_ID, SELF.PIECE, SELF.COLOR, SELF.COORDS(NEW COORDS)")
-    # TODO
-    #   ADD A CHECK IF THE OWN_TURN IS THE SAME AS THE CURRENT TURN
-    #   NEEDS TO CHANGE AND RETURN GLOBAL TURN!!!!!!!!
-
 
 # REFRESHES THE SCREEN
 def refresh():
@@ -125,67 +121,50 @@ def get_status(game_id):
     try:
         url = f"{API_GATEWAY_URL}/status"
         headers = {"Content-Type": "application/json"}
-
         response = requests.get(url, headers=headers)
-
         if response.status_code == 200:
             move_data_list = json.loads(response.json()['body'])
             move_list = []
-            # TODO
-            #   OPTIMIZE THIS BIT BY DOING THE FILTERING IN LAMBDA
             for data_move in move_data_list:
                 if data_move["game_id"] == str(game_id):
                     data_move["coords"] = ast.literal_eval(data_move["coords"])  # STR TO LIST
                     item = [data_move["coords"]]
                     if item not in move_list:
                         move_list.append(item)
-                move = len(move_list)
+                    move = len(move_list)
+                    print("     start      ")
 
-                for i in move_list:
-                    try:
-                        if type(i[0]) == str:
-                            i[0] = ast.literal_eval(i[0])  # STR TO LIST
+                    for i in move_list:
+                        print("i", i, i[0])
+                        try:
+                            if type(i[0]) == str:
+                                i[0] = ast.literal_eval(i[0])  # STR TO LIST
 
-                    except (ValueError, SyntaxError) as e:
-                        print(f"Error converting string to list: {e}")
+                        except (ValueError, SyntaxError) as e:
+                            print(f"Error converting string to list: {e}")
 
-                    try:
-                        print(piece_list.get(move).coords, i[0], move)
+                        try:
+                            piece_list.get(move).coords = i[0]
+                            for col in cols:
+                                for piece in col:
+                                    if piece.coords == piece_list.get(move).coords:
+                                        if piece not in col:
+                                            col.append(piece)
 
-                        # TODO
-                        #   THIS IS WHAT THE TOP PRINT PRINTS, THAT IS WHY THE PIECES CHANGE COLOR
+                        except Exception as e:
+                            print("Exceptiaon occurred in data_move:", str(e))
+                    print("     finish      ")
 
-                        # [515, 565][515, 565]
-                        # [605, 565][515, 565]
-                        # [515, 565][605, 565]
-
-                        piece_list.get(move).coords = i[0]
-
-                        for col in cols:
-                            for piece in col:
-                                if piece.coords == piece_list.get(move).coords:
-                                    if piece not in col:
-
-                                        # TODO
-                                        #   THIS WORKED BUT ONLY COULD SEE OWN PIECES
-                                        # piece_list.get(move).coords = i[0]
-
-                                        col.append(piece)
-
-                    except Exception as e:
-                        print("Exception occurred in data_move:", str(e))
-                print("end")
             if move % 2 != 0:
                 global_turn = 1
                 print(move, "change to 1")
             elif move % 2 == 0:
                 global_turn = 2
                 print(move, "change to 2")
-
         else:
             print(f"Failed to retrieve games. Status Code: {response.status_code}")
             print("Response:", response.text)
-        refresh()
+
 
     except Exception as e:
         print("Exception occurred in get status:", str(e))
@@ -209,10 +188,13 @@ class Space:
         if self.top_rect.collidepoint(posm):
             if pygame.mouse.get_pressed()[0] is True:
                 col = self.get_col()
+
+                # WORKS OK NO NEED TO CHANGE
                 piece_list.get(move).graphical_move(col, self, piece_list.get(move))
+
+
                 pygame.display.update()
-                get_status(game_id)
-                # time.sleep(0.5)
+                time.sleep(0.2)
 
 
 def create_board(player, gameid):
@@ -230,19 +212,18 @@ def create_board(player, gameid):
 
             if response.status_code == 200:
                 data = json.loads(response.json()['body'])
+                waiting_font = pygame.font.SysFont(None, 50)
                 for game in data:
                     if game["ID"] == str(game_id) and game["players"] == '1':
-                        font = pygame.font.SysFont(None, 50)
-                        img = font.render('Waiting for second player', True, white)
-                        gameDisplay.blit(img, (440, 40))
+                        waiting_text = waiting_font.render('Waiting for second player', True, white)
+                        gameDisplay.blit(waiting_text, (440, 40))
                         pygame.display.update()
                         players = 1
                         return players
 
                     elif game["ID"] == str(game_id) and game["players"] == '2':
-                        font = pygame.font.SysFont(None, 50)
-                        img = font.render('Waiting for second player', True, black)
-                        gameDisplay.blit(img, (440, 40))
+                        waiting_text = waiting_font.render('Waiting for second player', True, black)
+                        gameDisplay.blit(waiting_text, (440, 40))
                         pygame.display.update()
                         players = 2
                         return players
@@ -385,14 +366,15 @@ def create_board(player, gameid):
     #                rp19, yp20, rp20, yp21, rp21]
 
     piece_list = {
-        1: yp1, 2: rp1, 3: yp2, 4: rp2, 5: yp3, 6: rp3,
-        7: yp4, 8: rp4, 9: yp5, 10: rp5, 11: yp6, 12: rp6,
-        13: yp7, 14: rp7, 15: yp8, 16: rp8, 17: yp9, 18: rp9,
-        19: yp10, 20: rp10, 21: yp11, 22: rp11, 23: yp12, 24: rp12,
-        25: yp13, 26: rp13, 27: yp14, 28: rp14, 29: yp15, 30: rp15,
-        31: yp16, 32: rp16, 33: yp17, 34: rp17, 35: yp18, 36: rp18,
-        37: yp19, 38: rp19, 39: yp20, 40: rp20, 41: yp21, 42: rp21
-    }
+    0: yp1, 1: rp1, 2: yp2, 3: rp2, 4: yp3, 5: rp3,
+    6: yp4, 7: rp4, 8: yp5, 9: rp5, 10: yp6, 11: rp6,
+    12: yp7, 13: rp7, 14: yp8, 15: rp8, 16: yp9, 17: rp9,
+    18: yp10, 19: rp10, 20: yp11, 21: rp11, 22: yp12, 23: rp12,
+    24: yp13, 25: rp13, 26: yp14, 27: rp14, 28: yp15, 29: rp15,
+    30: yp16, 31: rp16, 32: yp17, 33: rp17, 34: yp18, 35: rp18,
+    36: yp19, 37: rp19, 38: yp20, 39: rp20, 40: yp21, 41: rp21
+}
+
 
     # ADDS THE GAME ID TO THE SCREEN
     font = pygame.font.SysFont(None, 30)
@@ -402,21 +384,23 @@ def create_board(player, gameid):
     pygame.display.update()
     players = get_second_player()
 
-    # while players == 1:
-    #     players = get_second_player()
-    #
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             pygame.quit()
-    #             sys.exit()
+    while players == 1:
+        players = get_second_player()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
 
     while not gameExit:
-        # TODO
-        #   AFTER A MOVE (TOUCHING A SPACE) IT SHOULD CHANGE TURN
-
         if own_turn == global_turn:
             for i in column_list:
                 i.check_click()
+        # get_status(game_id)
+
+        refresh()
+
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
