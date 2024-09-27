@@ -54,9 +54,6 @@ class Piece:
             gameDisplay.blit(red_piece_img, (self.coords[0], self.coords[1], 10, 10))
 
     # SENDS THE MOVE TO THE LAMBDA FUNCTION TO THEN PUT IT IN DYNAMO DB TABLE
-    # TODO
-    #   ADD A PIECE TAG "RP-1"... "YP-1"...
-
     def lambda_move(self, game_id):
         url = f"{API_GATEWAY_URL}/move"
 
@@ -145,17 +142,10 @@ def get_status(game_id):
                             move_list.append(piece[0].coords)  # ADDS THE COORDS TO A LIST TO GET THE NUM OF MOVEMENTS
                         move = len(move_list)  # TURNS THE NUM OF ITEMS IN THE LIST INTO A VARIABLE
 
-                        # ADDS THE PIECE COORDS TO THE COLUMNS LIST
-
-                        # TODO
-                        #   WHEN A PIECE GOES ON TOP OF A PIECES OF SAME COLOR WORKS, BUT IF IS OTHER COLOR IT BUGS
-                        #   PROBABLY BECAUSE IT DOESN'T GET THE COORDS PROPERLY FROM THE DB
+                        # ADDS THE PIECE COORDS TO THE CORRESPONDING COLUMN LIST
                         try:
                             for col in cols:
                                 for i in col:
-
-                                    print("i: ", i, i.coords, "piece: ", piece[0].coords)
-
                                     if i.coords == piece[0].coords:
                                         if piece[0] not in col:
                                             col.append(piece[0])
@@ -163,21 +153,20 @@ def get_status(game_id):
                         except Exception as e:
                             print("Exception occurred in data_move:", str(e))
 
+            # CHANGES THE TURN AFTER A MOVEMENT
             if move % 2 != 0:
                 global_turn = 1
-                print(move, "change to 1")
             elif move % 2 == 0:
                 global_turn = 2
-                print(move, "change to 2")
         else:
             print(f"Failed to retrieve games. Status Code: {response.status_code}")
             print("Response:", response.text)
-
 
     except Exception as e:
         print("Exception occurred in get status:", str(e))
 
 
+# CLASS FOR THE EMPTY SPACES
 class Space:
     def __init__(self, coords, piece):
         self.piece = piece
@@ -198,18 +187,17 @@ class Space:
                 try:
                     col = self.get_col()
                     piece_list.get(move)[0].graphical_move(col, self, piece_list.get(move)[0])
-
                     pygame.display.update()
                     time.sleep(0.2)
                 except Exception as e:
                     print("Exception occurred in Space.check_click(): ", str(e))
 
 
-def create_board(player, gameid):
+def create_board(player, gameid):   # CREATES THE BOARD
     global yellow_list, red_list, game_id, cols, piece_list, global_turn
     game_id = gameid
 
-    def get_second_player():
+    def get_second_player():    # CHECKS IN THE DB IF THERE IS A SECOND PLAYER
         global data
         search_type = 'players'
         try:
@@ -222,6 +210,8 @@ def create_board(player, gameid):
                 data = json.loads(response.json()['body'])
                 waiting_font = pygame.font.SysFont(None, 50)
                 for game in data:
+
+                    # IF NUM OF PLAYERS = 1, WAIT FOR 2ND PLAYER
                     if game["ID"] == str(game_id) and game["players"] == '1':
                         waiting_text = waiting_font.render('Waiting for second player', True, white)
                         gameDisplay.blit(waiting_text, (440, 40))
@@ -229,6 +219,7 @@ def create_board(player, gameid):
                         players = 1
                         return players
 
+                    # IF NUM OF PLAYERS = 2, REMOVE WAITING_TEXT AND START GAME SEN
                     elif game["ID"] == str(game_id) and game["players"] == '2':
                         waiting_text = waiting_font.render('Waiting for second player', True, black)
                         gameDisplay.blit(waiting_text, (440, 40))
@@ -353,6 +344,7 @@ def create_board(player, gameid):
     s41 = Space([875, 485], None)
     s42 = Space([875, 565], None)
 
+    # LISTS OF COLUMNS
     col1 = [s1, s2, s3, s4, s5, s6]
     col2 = [s7, s8, s9, s10, s11, s12]
     col3 = [s13, s14, s15, s16, s17, s18]
@@ -369,10 +361,7 @@ def create_board(player, gameid):
                                 s37, s38,
                                 s39, s40, s41, s42]
 
-    # piece_list = [yp1, rp1, yp2, rp2, yp3, rp3, yp4, rp4, yp5, rp5, yp6, rp6, yp7, rp7, yp8, rp8, yp9, rp9, yp10, rp10,
-    #                yp11, rp11, yp12, rp12, yp13, rp13, yp14, rp14, yp15, rp15, yp16, rp16, yp17, rp17, yp18, rp18, yp19,
-    #                rp19, yp20, rp20, yp21, rp21]
-
+    # DICTIONARY OF ALL THE PIECES WITH THEIR RESPECTIVE NAMES
     piece_list = {
         0: (yp1, 'yp1'), 1: (rp1, 'rp1'), 2: (yp2, 'yp2'), 3: (rp2, 'rp2'),
         4: (yp3, 'yp3'), 5: (rp3, 'rp3'), 6: (yp4, 'yp4'), 7: (rp4, 'rp4'),
@@ -395,20 +384,19 @@ def create_board(player, gameid):
     pygame.display.update()
     players = get_second_player()
 
-    while players == 1:
+    while players == 1:  # CHECKS FOR 2ND PLAYER
         players = get_second_player()
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-    while not gameExit:
+    while not gameExit:  # MAIN LOOP
         if own_turn == global_turn:
             for i in column_list:
                 i.check_click()
-        get_status(game_id)
 
+        get_status(game_id)
         refresh()
 
         for event in pygame.event.get():
