@@ -193,15 +193,20 @@ class Space:
 
 
 # REMOVES DATA (MOVES AND GAME_ID) FROM OLD GAMES
+
+
+# TODO
+#   GIVES A 403 ERROR, FIX IT
 def game_end(game_id):
-    url = f"{API_GATEWAY_URL}/delete"
+    url = f"{API_GATEWAY_URL}/DELETE"
 
     payload = {
         "game_id": game_id,
     }
 
     headers = {"Content-Type": "application/json"}
-    response = requests.post(url, data=json.dumps(payload), headers=headers)
+    response = requests.delete(url, data=json.dumps(payload), headers=headers)
+    print(response)
     return response.json()
 
 
@@ -414,6 +419,8 @@ def create_board(player, gameid):   # CREATES THE BOARD
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_end(game_id)
+                print(game_id)
+                print(type(game_id))
                 pygame.quit()
                 sys.exit()
 
