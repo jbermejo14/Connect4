@@ -67,7 +67,6 @@ class Piece:
         response = requests.post(url, data=json.dumps(payload), headers=headers)
         return response.json()
 
-    # IT DOESN'T SEEM TO UPDATE THE DATABASE
     def graphical_move(self, col, space, piece):
         num = 0
         for i in col:
@@ -191,6 +190,19 @@ class Space:
                     time.sleep(0.2)
                 except Exception as e:
                     print("Exception occurred in Space.check_click(): ", str(e))
+
+
+# REMOVES DATA (MOVES AND GAME_ID) FROM OLD GAMES
+def game_end(game_id):
+    url = f"{API_GATEWAY_URL}/delete"
+
+    payload = {
+        "game_id": game_id,
+    }
+
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(url, data=json.dumps(payload), headers=headers)
+    return response.json()
 
 
 def create_board(player, gameid):   # CREATES THE BOARD
@@ -401,13 +413,17 @@ def create_board(player, gameid):   # CREATES THE BOARD
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                game_end(game_id)
                 pygame.quit()
                 sys.exit()
+
+#     ADD FUNCTION THAT DELETES ALL MOVES AND GAME ID FROM THAT GAME
 
 # TODO
 #   ADD TRY/EXCEPT TO ALL FUNCTIONALITIES OF THE CODE
 #   ADD TAGGING
 #   SPACES HAVE AN ATTRIBUTE CALLED PIECE TO INDICATE IF THERE IS A PIECE INSIDE IT, MAYBE USE IT
 #   ADD AUTO REMOVING OF MOVEMENTS AND GAME ID IN DYNAMODB
+#       IN PROCESS
 #   ADD WHO STARTS BEFORE STARTING THE GAME
 #
