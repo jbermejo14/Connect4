@@ -193,10 +193,6 @@ class Space:
 
 
 # REMOVES DATA (MOVES AND GAME_ID) FROM OLD GAMES
-
-
-# TODO
-#   GIVES A 403 ERROR, FIX IT
 def game_end(game_id):
     url = f"{API_GATEWAY_URL}/DELETE"
 
@@ -206,7 +202,6 @@ def game_end(game_id):
 
     headers = {"Content-Type": "application/json"}
     response = requests.delete(url, data=json.dumps(payload), headers=headers)
-    print(response)
     return response.json()
 
 
