@@ -138,8 +138,8 @@ def get_status(game_id):
                         piece[0].coords = data_move["coords"]
 
                         if piece[0].coords not in move_list:
-                            move_list.append(piece[0].coords)  # ADDS THE COORDS TO A LIST TO GET THE NUM OF MOVEMENTS
-                        move = len(move_list)  # TURNS THE NUM OF ITEMS IN THE LIST INTO A VARIABLE
+                            move_list.append(piece[0])  # ADDS THE PIECE TO A LIST TO GET THE NUM OF MOVEMENTS
+                        move = len(move_list)  # TURNS THE NUM OF PIECES (MOVES) IN THE LIST INTO A VARIABLE
 
                         # ADDS THE PIECE COORDS TO THE CORRESPONDING COLUMN LIST
                         try:
@@ -187,13 +187,12 @@ class Space:
                     col = self.get_col()
                     piece_list.get(move)[0].graphical_move(col, self, piece_list.get(move)[0])
                     pygame.display.update()
-                    time.sleep(0.2)
                 except Exception as e:
                     print("Exception occurred in Space.check_click(): ", str(e))
 
 
 # REMOVES DATA (MOVES AND GAME_ID) FROM OLD GAMES
-def game_end(game_id):
+def clean_data(game_id):
     url = f"{API_GATEWAY_URL}/DELETE"
 
     payload = {
@@ -205,11 +204,61 @@ def game_end(game_id):
     return response.json()
 
 
-def create_board(player, gameid):   # CREATES THE BOARD
+# TO IMPROVE THE PLAY GET A LIST WITH THE MOVED PIECES SO IT DOESN'T READ ALL THE PIECES
+def check_winner():
+    global gameExit
+    for piece1 in move_list:
+        piece1coords0 = piece1.coords[0]
+        piece1coords1 = piece1.coords[1]
+        for piece2 in move_list:
+            piece2coords0 = piece2.coords[0]
+            piece2coords1 = piece2.coords[1]
+            for piece3 in move_list:
+                piece3coords0 = piece3.coords[0]
+                piece3coords1 = piece3.coords[1]
+                for piece4 in move_list:
+                    piece4coords0 = piece4.coords[0]
+                    piece4coords1 = piece4.coords[1]
+
+                    # CHECKS IF THE FOUR PIECES TO COMPARE ARE THE SAME COLOR
+                    if (piece1.color == piece2.color == piece3.color == piece4.color and piece1 != piece2
+                            and piece1 != piece3 and piece1 != piece4 and piece2 != piece3 and piece2 != piece4
+                            and piece3 != piece4):
+
+                        # CHECKS VERTICAL
+                        if (piece1coords1 == piece2coords1 + 80 and piece1coords0 == piece2coords0
+                                and piece1coords1 == piece3coords1 + 160 and piece1coords0 == piece3coords0
+                                and piece1coords1 == piece4coords1 + 240 and piece1coords0 == piece4coords0
+
+                                # CHECKS HORIZONTAL
+                                or piece1coords0 == piece2coords0 + 90 and piece1coords1 == piece2coords1
+                                and piece1coords0 == piece3coords0 + 180 and piece1coords1 == piece2coords1
+                                and piece1coords0 == piece4coords0 + 270 and piece1coords1 == piece2coords1
+
+                                # CHECKS Y+ X+ / Y- X- (UP-RIGHT)
+                                or piece1coords0 == piece2coords0 + 90 and piece1coords1 == piece2coords1 + 80
+                                and piece1coords0 == piece3coords0 + 180 and piece1coords1 == piece3coords1 + 160
+                                and piece1coords0 == piece4coords0 + 270 and piece1coords1 == piece4coords1 + 240
+
+                                # CHECKS Y+ X- / Y- X+ (UP-LEFT)
+                                or piece1coords0 == piece2coords0 + 90 and piece1coords1 == piece2coords1 - 80
+                                and piece1coords0 == piece3coords0 + 180 and piece1coords1 == piece3coords1 - 160
+                                and piece1coords0 == piece4coords0 + 270 and piece1coords1 == piece4coords1 - 240):
+
+                            # CHANGE THE SCREEN TO SHOW THE WINNER
+                            gameover = pygame.font.SysFont(None, 50)
+                            waiting_text = gameover.render(piece1.color + ' Won!', True, white)
+                            gameDisplay.blit(waiting_text, (440, 40))
+                            gameExit = True
+                            pygame.display.update()
+                            time.sleep(2)
+
+
+def create_board(player, gameid):  # CREATES THE BOARD
     global yellow_list, red_list, game_id, cols, piece_list, global_turn
     game_id = gameid
 
-    def get_second_player():    # CHECKS IN THE DB IF THERE IS A SECOND PLAYER
+    def get_second_player():  # CHECKS IN THE DB IF THERE IS A SECOND PLAYER
         global data
         search_type = 'players'
         try:
@@ -410,12 +459,11 @@ def create_board(player, gameid):   # CREATES THE BOARD
 
         get_status(game_id)
         refresh()
+        check_winner()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                game_end(game_id)
-                print(game_id)
-                print(type(game_id))
+                clean_data(game_id)
                 pygame.quit()
                 sys.exit()
 
