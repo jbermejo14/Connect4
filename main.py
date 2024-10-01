@@ -252,7 +252,7 @@ def check_winner():
                             gameExit = True
                             pygame.display.update()
                             time.sleep(2)
-
+                            clean_data(game_id)
 
 def create_board(player, gameid):  # CREATES THE BOARD
     global yellow_list, red_list, game_id, cols, piece_list, global_turn
@@ -472,8 +472,6 @@ def create_board(player, gameid):  # CREATES THE BOARD
 # TODO
 #   ADD TRY/EXCEPT TO ALL FUNCTIONALITIES OF THE CODE
 #   ADD TAGGING
-#   SPACES HAVE AN ATTRIBUTE CALLED PIECE TO INDICATE IF THERE IS A PIECE INSIDE IT, MAYBE USE IT
-#   ADD AUTO REMOVING OF MOVEMENTS AND GAME ID IN DYNAMODB
-#       IN PROCESS
+#   ADD SOUNDS
 #   ADD WHO STARTS BEFORE STARTING THE GAME
 #
