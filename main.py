@@ -11,9 +11,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+pygame.mixer.init()
+
 black = pygame.Color(0, 0, 0)
 white = pygame.Color(255, 255, 255)
 gameDisplay = pygame.display.set_mode((1200, 800))
+
+piece_sound_effect = pygame.mixer.Sound('sounds/piece1.mp3')
+intro_sound_effect = pygame.mixer.Sound('sounds/intro.mp3')
+end_sound_effect = pygame.mixer.Sound('sounds/end.mp3')
+
 
 gameExit = False
 table = pygame.image.load("resources/board.png")
@@ -148,6 +155,8 @@ def get_status(game_id):
                                     if i.coords == piece[0].coords:
                                         if piece[0] not in col:
                                             col.append(piece[0])
+                                            piece_sound_effect.play()
+
 
                         except Exception as e:
                             print("Exception occurred in data_move:", str(e))
@@ -247,11 +256,12 @@ def check_winner():
 
                             # CHANGE THE SCREEN TO SHOW THE WINNER
                             gameover = pygame.font.SysFont(None, 50)
-                            waiting_text = gameover.render(piece1.color + ' Won!', True, white)
-                            gameDisplay.blit(waiting_text, (440, 40))
+                            waiting_text = gameover.render(piece1.color + ' won!', True, white)
+                            gameDisplay.blit(waiting_text, (540, 40))
                             gameExit = True
                             pygame.display.update()
-                            time.sleep(2)
+                            end_sound_effect.play()
+                            time.sleep(3)
                             clean_data(game_id)
 
 def create_board(player, gameid):  # CREATES THE BOARD
@@ -451,7 +461,7 @@ def create_board(player, gameid):  # CREATES THE BOARD
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
+    intro_sound_effect.play()
     while not gameExit:  # MAIN LOOP
         if own_turn == global_turn:
             for i in column_list:
