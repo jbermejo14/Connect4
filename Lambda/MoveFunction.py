@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 # Initialize the DynamoDB resource
 dynamodb = boto3.resource('dynamodb')
 
+
 def lambda_handler(event, context):
     # Define the DynamoDB table
     table = dynamodb.Table('moves')
@@ -15,10 +16,9 @@ def lambda_handler(event, context):
         game_id = event.get('game_id')
         coords = event.get('coords')
 
-
         # Prepare the item to be inserted into DynamoDB
         item = {
-            'ID': str(move_id),  # DynamoDB requires keys to be string
+            'ID': str(move_id),
             'game_id': str(game_id),
             'coords': str(coords)
         }

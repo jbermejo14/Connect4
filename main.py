@@ -1,6 +1,5 @@
 import ast
 import time
-import random
 import pygame
 import sys
 import json
@@ -20,7 +19,6 @@ gameDisplay = pygame.display.set_mode((1200, 800))
 piece_sound_effect = pygame.mixer.Sound('sounds/piece1.mp3')
 intro_sound_effect = pygame.mixer.Sound('sounds/intro.mp3')
 end_sound_effect = pygame.mixer.Sound('sounds/end.mp3')
-
 
 gameExit = False
 table = pygame.image.load("resources/board.png")
@@ -181,12 +179,14 @@ class Space:
         self.coords = coords
         self.top_rect = pygame.Rect(self.coords, (80, 80))
 
+    # GETS IN WHICH COLUMN THE SPACE IS
     def get_col(self):
         for col in cols:
             for space in col:
                 if self == space:
                     return col
 
+    # CHECKS IF THE SPACES HAS BEEN CLICKED
     def check_click(self):
         global turn, move, global_turn
         posm = pygame.mouse.get_pos()
@@ -213,7 +213,7 @@ def clean_data(game_id):
     return response.json()
 
 
-# TO IMPROVE THE PLAY GET A LIST WITH THE MOVED PIECES SO IT DOESN'T READ ALL THE PIECES
+# CHECKS IF THERE IS 4 PIECES INLINE OF THE SAME COLOR
 def check_winner():
     global gameExit
     for piece1 in move_list:
@@ -241,8 +241,8 @@ def check_winner():
 
                                 # CHECKS HORIZONTAL
                                 or piece1coords0 == piece2coords0 + 90 and piece1coords1 == piece2coords1
-                                and piece1coords0 == piece3coords0 + 180 and piece1coords1 == piece2coords1
-                                and piece1coords0 == piece4coords0 + 270 and piece1coords1 == piece2coords1
+                                and piece1coords0 == piece3coords0 + 180 and piece1coords1 == piece3coords1
+                                and piece1coords0 == piece4coords0 + 270 and piece1coords1 == piece4coords1
 
                                 # CHECKS Y+ X+ / Y- X- (UP-RIGHT)
                                 or piece1coords0 == piece2coords0 + 90 and piece1coords1 == piece2coords1 + 80
@@ -253,7 +253,6 @@ def check_winner():
                                 or piece1coords0 == piece2coords0 + 90 and piece1coords1 == piece2coords1 - 80
                                 and piece1coords0 == piece3coords0 + 180 and piece1coords1 == piece3coords1 - 160
                                 and piece1coords0 == piece4coords0 + 270 and piece1coords1 == piece4coords1 - 240):
-
                             # CHANGE THE SCREEN TO SHOW THE WINNER
                             gameover = pygame.font.SysFont(None, 50)
                             waiting_text = gameover.render(piece1.color + ' won!', True, white)
@@ -263,6 +262,7 @@ def check_winner():
                             end_sound_effect.play()
                             time.sleep(3)
                             clean_data(game_id)
+
 
 def create_board(player, gameid):  # CREATES THE BOARD
     global yellow_list, red_list, game_id, cols, piece_list, global_turn
@@ -447,12 +447,13 @@ def create_board(player, gameid):  # CREATES THE BOARD
         40: (yp21, 'yp21'), 41: (rp21, 'rp21')
     }
 
-    # ADDS THE GAME ID TO THE SCREEN
+    # ADDS THE GAME_ID TO THE SCREEN
     font = pygame.font.SysFont(None, 30)
     img = font.render('Game Num: ' + str(game_id), True, white)
     gameDisplay.blit(img, (10, 20))
-
     pygame.display.update()
+
+    # IF THERE IS 2 PLAYERS IN TOTAL, IT GOES DIRECTLY TO THE MAIN LOOP (DOESN'T WAIT FOR THE 2ND PLAYER)
     players = get_second_player()
 
     while players == 1:  # CHECKS FOR 2ND PLAYER
@@ -461,27 +462,24 @@ def create_board(player, gameid):  # CREATES THE BOARD
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
+    # SOUND FOR WHEN THE GAME STARTS (WHEN THERE IS TWO PLAYERS)
     intro_sound_effect.play()
+
     while not gameExit:  # MAIN LOOP
+
+        # CHECKS IF A COLUMN HAS BEEN PRESSED
         if own_turn == global_turn:
             for i in column_list:
                 i.check_click()
 
-        get_status(game_id)
-        refresh()
-        check_winner()
+        get_status(game_id)  # GETS THE STATUS FROM THE DB (IF THERE IS ANY CHANGES IN DB)
+        refresh()  # REFRESHES SCREEN
+        check_winner()  # CHECKS IF THERE IS 4 PIECES IN LINE
 
+        # CHECKS IF QUIT BUTTON IS PRESSED
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 clean_data(game_id)
                 pygame.quit()
                 sys.exit()
-
-#     ADD FUNCTION THAT DELETES ALL MOVES AND GAME ID FROM THAT GAME
-
-# TODO
-#   ADD TRY/EXCEPT TO ALL FUNCTIONALITIES OF THE CODE
-#   ADD TAGGING
-#   ADD SOUNDS
-#   ADD WHO STARTS BEFORE STARTING THE GAME
-#
